@@ -13,13 +13,13 @@ class BeckmannDistribution : public NDF {
 
   float getG1(const Vector3f& w, const Vector2f& alpha) const {
 
-    float cosTheta = dot(w, Vector3f{0.f, 1.f, 0.f});
+    float cosTheta = w[1];
     float tanTheta = fm::sqrt(1.f - _sq(cosTheta)) / cosTheta;
 
-    Vector2f phiVec = Vector2f(w[0], w[2]);
-    phiVec /= phiVec.len();
+    Vector2f vecPhi = Vector2f{w[0], w[2]};
+    vecPhi /= vecPhi.len();
 
-    float alphaNum = phiVec.dot(alpha);
+    float alphaNum = fm::sqrt(alpha[0] * _sq(vecPhi[0]) + alpha[1] * _sq(vecPhi[1]));
     float a = 1.f / (alphaNum * tanTheta);
 
     if (a < 1.6f) {
@@ -39,13 +39,13 @@ public:
   virtual float getD(const Vector3f& whLocal,
                      const Vector2f& alpha) const noexcept override {
 
-    float cosTheta = dot(whLocal, Vector3f{0.f, 1.f, 0.f});
+    float cosTheta = whLocal[1];
     float tanTheta = fm::sqrt(1.f - _sq(cosTheta)) / cosTheta;
 
-    Vector2f phiVec = Vector2f(whLocal[0], whLocal[2]);
-    phiVec /= phiVec.len();
+    Vector2f vecPhi = Vector2f(whLocal[0], whLocal[2]);
+    vecPhi /= vecPhi.len();
 
-    float alphaNum = phiVec.dot(alpha);
+    float alphaNum = fm::sqrt(alpha[0] * _sq(vecPhi[0]) + alpha[1] * _sq(vecPhi[1]));
 
     return fm::exp(-_sq(tanTheta) / _sq(alphaNum))
       / (PI * _sq(alphaNum) * _sq(_sq(cosTheta)));

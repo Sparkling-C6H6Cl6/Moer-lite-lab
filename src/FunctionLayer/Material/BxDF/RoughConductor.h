@@ -12,19 +12,21 @@ public:
     eta(_eta), k(_k), ndf(_ndf) {}
 
   virtual Spectrum f(const Vector3f& wo, const Vector3f& wi) const override {
+
     // TODO
     // 1. 转换坐标系到局部坐标
 
-    Vector3f woLocal = toLocal(wo);
-    Vector3f wiLocal = toLocal(wi);
+    Vector3f woLocal = normalize(toLocal(wo));
+    Vector3f wiLocal = normalize(toLocal(wi));
     Vector3f whLocal = normalize(woLocal + wiLocal);
 
     // 2. 根据公式计算 Fr, D, G
 
-    Vector3f paramFr = getFr(dot(woLocal, Vector3f{0.f, 1.f, 0.f}));
+    float cosThetaO = woLocal[1];
+    float cosThetaI = wiLocal[1];
+    Vector3f paramFr = getFr(cosThetaO);
     float paramD = ndf->getD(whLocal, alpha);
     float paramG = ndf->getG(woLocal, wiLocal, alpha);
-    float cosThetaO = dot(woLocal, Vector3f{0.f, 1.f, 0.f});
 
     // 3. return albedo * D * G * Fr / (4 * \cos\theta_o);
     // tips: brdf
@@ -44,6 +46,7 @@ public:
     return ((eta - 1.f) * (eta - 1.f) + k * k) /
       ((eta + 1.f) * (eta + 1.f) + k * k);
   }
+
   Vector3f getFr(float cosTheta) const noexcept {
     Vector3f r0 = getR0();
     return r0 + (Vector3f(1.f) - r0) * std::pow(1.f - cosTheta, 5.f);

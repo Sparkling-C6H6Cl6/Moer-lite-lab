@@ -30,19 +30,21 @@ public:
     float paramA = 1.f - (.5f * _sq(sigma)) / (_sq(sigma) + .33f);
     float paramB = (.45f * _sq(sigma)) / (_sq(sigma) + .09f);
 
-    float cosThetaO = clamp(dot(wo, Vector3f{0.f, 1.f, 0.f}), 0.f, 1.f);
-    float cosThetaI = clamp(dot(wi, Vector3f{0.f, 1.f, 0.f}), 0.f, 1.f);
+    float cosThetaO = woLocal[1];
+    float cosThetaI = wiLocal[1];
 
     float cosAlpha = std::min(cosThetaI, cosThetaO);
     float cosBeta = std::max(cosThetaI, cosThetaO);
     float sinAlpha = fm::sqrt(1.f - _sq(cosAlpha));
-    float tanBeta = std::numeric_limits<float>::max();
-    if (cosBeta != 0.f) {
-      tanBeta = fm::sqrt(1.f - _sq(cosBeta)) / cosBeta;
-    }
+    float tanBeta = fm::sqrt(1.f - _sq(cosBeta)) / cosBeta;
 
-    float cosGamma = dot(normalize(wo * Vector3f{1.f, 0.f, 1.f}),
-                         normalize(wi * Vector3f{1.f, 0.f, 1.f}));
+    Vector3f vecPhiO = normalize(woLocal * Vector3f{1.f, 0.f, 1.f});
+    Vector3f vecPhiI = normalize(wiLocal * Vector3f{1.f, 0.f, 1.f});
+    float cosPhiO = vecPhiO[0];
+    float cosPhiI = vecPhiI[0];
+    float sinPhiO = vecPhiO[2];
+    float sinPhiI = vecPhiI[2];
+    float cosGamma = cosPhiO * cosPhiI + sinPhiO * sinPhiI;
 
     // 3. return Oren-Nayar brdf
 

@@ -16,21 +16,18 @@ public:
     // TODO
     // 1. 转换坐标系到局部坐标
 
-    Vector3f woLocal = toLocal(wo);
-    Vector3f wiLocal = toLocal(wi);
+    Vector3f woLocal = normalize(toLocal(wo));
+    Vector3f wiLocal = normalize(toLocal(wi));
     Vector3f whLocal = normalize(woLocal + wiLocal);
 
     // 2. 根据公式计算 Fr, D, G
 
-    Vector3f paramFr = 0.f;
-    if (wiLocal[1] >= 0.f) {
-      paramFr = getFr(eta, dot(woLocal, Vector3f{0.f, 1.f, 0.f}));
-    } else {
-      paramFr = getFr(1.f / eta, dot(woLocal, Vector3f{0.f, 1.f, 0.f}));
-    }
+    float cosThetaO = woLocal[1];
+    float cosThetaI = wiLocal[1];
+    float etaO = cosThetaI >= 0.f ? eta : (1.f / eta);
+    Vector3f paramFr = getFr(etaO, cosThetaO);
     float paramD = ndf->getD(whLocal, alpha);
     float paramG = ndf->getG(woLocal, wiLocal, alpha);
-    float cosThetaO = dot(woLocal, Vector3f{0.f, 1.f, 0.f});
 
     // 3. return albedo * D * G * Fr / (4 * \cos\theta_o);
     // tips:
@@ -50,6 +47,7 @@ public:
   float getR0(float etaO) const noexcept {
     return ((etaO - 1.f) * (etaO - 1.f)) / ((etaO + 1.f) * (etaO + 1.f));
   }
+
   float getFr(float etaO, float cosTheta) const noexcept {
     float r0 = getR0(etaO);
     return r0 + (1.f - r0) * std::pow(1.f - cosTheta, 5.f);
