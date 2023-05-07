@@ -5,25 +5,43 @@
 
 class RoughDielectricBSDF : public BSDF {
 public:
-  RoughDielectricBSDF(const Vector3f &_normal, const Vector3f &_tangent,
-                      const Vector3f &_bitangent, Spectrum _albedo,
-                      Vector2f _alpha, float _eta, NDF *_ndf)
-      : BSDF(_normal, _tangent, _bitangent), albedo(_albedo), alpha(_alpha),
-        eta(_eta), ndf(_ndf) {}
+  RoughDielectricBSDF(const Vector3f& _normal, const Vector3f& _tangent,
+                      const Vector3f& _bitangent, Spectrum _albedo,
+                      Vector2f _alpha, float _eta, NDF* _ndf)
+    : BSDF(_normal, _tangent, _bitangent), albedo(_albedo), alpha(_alpha),
+    eta(_eta), ndf(_ndf) {}
 
-  virtual Spectrum f(const Vector3f &wo, const Vector3f &wi) const override {
+  virtual Spectrum f(const Vector3f& wo, const Vector3f& wi) const override {
+
     // TODO
     // 1. 转换坐标系到局部坐标
+
+    Vector3f woLocal = toLocal(wo);
+    Vector3f wiLocal = toLocal(wi);
+    Vector3f whLocal = normalize(woLocal + wiLocal);
+
     // 2. 根据公式计算 Fr, D, G
+
+    Vector3f paramFr = 0.f;
+    if (wiLocal[1] >= 0.f) {
+      paramFr = getFr(eta, dot(woLocal, Vector3f{0.f, 1.f, 0.f}));
+    } else {
+      paramFr = getFr(1.f / eta, dot(woLocal, Vector3f{0.f, 1.f, 0.f}));
+    }
+    float paramD = ndf->getD(whLocal, alpha);
+    float paramG = ndf->getG(woLocal, wiLocal, alpha);
+    float cosThetaO = dot(woLocal, Vector3f{0.f, 1.f, 0.f});
+
     // 3. return albedo * D * G * Fr / (4 * \cos\theta_o);
     // tips:
     // 不考虑多重介质，如果光线从真空射入介质，其eta即配置中填写的eta；
     // 如果光线从介质射出，则eta = 1/eta
-    return {0.f};
+
+    return albedo * paramD * paramG * paramFr / (4.f * cosThetaO);
   }
 
-  virtual BSDFSampleResult sample(const Vector3f &wo,
-                                  const Vector2f &sample) const override {
+  virtual BSDFSampleResult sample(const Vector3f& wo,
+                                  const Vector2f& sample) const override {
     Vector3f wi = squareToCosineHemisphere(sample);
     float pdf = squareToCosineHemispherePdf(wi);
     return {f(wo, toWorld(wi)) / pdf, toWorld(wi), pdf, BSDFType::Diffuse};
@@ -41,5 +59,5 @@ private:
   Spectrum albedo;
   Vector2f alpha;
   float eta;
-  NDF *ndf;
+  NDF* ndf;
 };

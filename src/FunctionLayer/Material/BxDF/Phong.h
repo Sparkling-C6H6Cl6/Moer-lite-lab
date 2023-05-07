@@ -4,30 +4,39 @@
 
 class PhongReflection : public BSDF {
 public:
-  PhongReflection(const Vector3f &_normal, const Vector3f &_tangent,
-                  const Vector3f &_bitangent, Spectrum _kd, Spectrum _ks,
+  PhongReflection(const Vector3f& _normal, const Vector3f& _tangent,
+                  const Vector3f& _bitangent, Spectrum _kd, Spectrum _ks,
                   float _p)
-      : BSDF(_normal, _tangent, _bitangent), kd(_kd), ks(_ks), p(_p) {}
+    : BSDF(_normal, _tangent, _bitangent), kd(_kd), ks(_ks), p(_p) {}
 
-  virtual Spectrum f(const Vector3f &wo, const Vector3f &wi) const override {
+  virtual Spectrum f(const Vector3f& wo, const Vector3f& wi) const override {
+
     // TODO
     // 1. 转换坐标系到局部坐标
+
+    Vector3f woLocal = toLocal(wo);
+    Vector3f wiLocal = toLocal(wi);
+
     // 2. 根据公式计算 K_d, K_s
+
+    Spectrum diffuse = kd * dot(wiLocal, Vector3f{0.f, 1.f, 0.f});
+    Spectrum specular = ks * pow(dot(woLocal,
+                                     wiLocal * Vector3f{1.f, -1.f, 1.f}), p);
+
     // 3. return K_d + K_s
     // tips:
     // Phong模型brdf实现不包括环境光项；其I/r^2项包含在光源采样步骤中，因此brdf中不包含I/r^2。
-    Spectrum diffuse{0.f};
-    Spectrum specular{0.f};
+
     return diffuse + specular;
   }
 
-  float pdf(const Vector3f &wo, const Vector3f &wi) const {
+  float pdf(const Vector3f& wo, const Vector3f& wi) const {
     Vector3f woLocal = toLocal(wo), wiLocal = toLocal(wi);
     return squareToCosineHemispherePdf(wiLocal);
   }
 
-  virtual BSDFSampleResult sample(const Vector3f &wo,
-                                  const Vector2f &sample) const override {
+  virtual BSDFSampleResult sample(const Vector3f& wo,
+                                  const Vector2f& sample) const override {
     Vector3f wiLocal = squareToCosineHemisphere(sample);
     auto wi = toWorld(wiLocal);
     auto bsdf_f = f(wo, wi);
