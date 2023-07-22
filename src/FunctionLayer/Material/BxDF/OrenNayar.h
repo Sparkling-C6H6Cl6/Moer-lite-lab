@@ -21,8 +21,8 @@ public:
     // TODO
     // 1. 转换坐标系到局部坐标
 
-    Vector3f woLocal = toLocal(wo);
-    Vector3f wiLocal = toLocal(wi);
+    Vector3f woLocal = normalize(toLocal(wo));
+    Vector3f wiLocal = normalize(toLocal(wi));
 
     // 2. 计算 A, B, \alpha, \beta（可以直接求\sin\alpha,\tan\beta）,
     // \cos(\phi_i-\phi_o)
@@ -49,7 +49,7 @@ public:
     // 3. return Oren-Nayar brdf
 
     return albedo / PI *
-      (paramA + paramB * std::max(0.f, cosGamma) * sinAlpha * tanBeta);
+      (paramA + paramB * std::max(0.f, cosGamma) * sinAlpha * tanBeta) * cosThetaI;
 
   }
 

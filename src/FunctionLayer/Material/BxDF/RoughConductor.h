@@ -4,6 +4,14 @@
 #include "Warp.h"
 
 class RoughConductorBSDF : public BSDF {
+
+  template <
+    typename T,
+    typename std::enable_if_t<std::is_arithmetic_v<T>, int> = 0>
+  constexpr static T _sq(T x) {
+    return x * x;
+  }
+
 public:
   RoughConductorBSDF(const Vector3f& _normal, const Vector3f& _tangent,
                      const Vector3f& _bitangent, Spectrum _albedo,
@@ -24,7 +32,12 @@ public:
 
     float cosThetaO = woLocal[1];
     float cosThetaI = wiLocal[1];
-    Vector3f paramFr = getFr(cosThetaO);
+
+    if (cosThetaO == 0.f || cosThetaI == 0.f || whLocal.isZero()) {
+      return 0.f;
+    }
+
+    Vector3f paramFr = getFr(dot(woLocal, whLocal));
     float paramD = ndf->getD(whLocal, alpha);
     float paramG = ndf->getG(woLocal, wiLocal, alpha);
 
@@ -37,9 +50,23 @@ public:
 
   virtual BSDFSampleResult sample(const Vector3f& wo,
                                   const Vector2f& sample) const override {
-    Vector3f wi = squareToCosineHemisphere(sample);
-    float pdf = squareToCosineHemispherePdf(wi);
-    return {f(wo, toWorld(wi)) / pdf, toWorld(wi), pdf, BSDFType::Diffuse};
+    Vector3f woLocal = toLocal(wo);
+    Vector3f whLocal = ndf->sampleWh(woLocal, alpha, sample);
+    Vector3f wiLocal = normalize(-woLocal + 2.f * dot(woLocal, whLocal) * whLocal);
+    float woDotWh = dot(woLocal, whLocal);
+    if (woDotWh < 0.f || wiLocal[1] < 0.f) {
+      return {};
+    }
+    float pdf = ndf->pdf(woLocal, whLocal, alpha) * 0.25f / woDotWh;
+    Vector3f paramFr = getFr(woDotWh);
+    float paramD = ndf->getD(whLocal, alpha);
+    float paramG = ndf->getG(woLocal, wiLocal, alpha);
+    return {
+      paramD * paramG * paramFr / (4.f * woLocal[1] * wiLocal[1]),
+      toWorld(wiLocal),
+      pdf,
+      BSDFType::GlossyReflection
+    };
   }
 
   Vector3f getR0() const noexcept {

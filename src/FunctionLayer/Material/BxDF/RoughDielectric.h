@@ -2,8 +2,17 @@
 #include "../NDF/NDF.h"
 #include "BSDF.h"
 #include "Warp.h"
+#include <random>
 
 class RoughDielectricBSDF : public BSDF {
+
+  template <
+    typename T,
+    typename std::enable_if_t<std::is_arithmetic_v<T>, int> = 0>
+  constexpr static T _sq(T x) {
+    return x * x;
+  }
+
 public:
   RoughDielectricBSDF(const Vector3f& _normal, const Vector3f& _tangent,
                       const Vector3f& _bitangent, Spectrum _albedo,
@@ -25,7 +34,7 @@ public:
     float cosThetaO = woLocal[1];
     float cosThetaI = wiLocal[1];
     float etaO = cosThetaI >= 0.f ? eta : (1.f / eta);
-    Vector3f paramFr = getFr(etaO, cosThetaO);
+    float paramFr = getFr(etaO, dot(woLocal, whLocal));
     float paramD = ndf->getD(whLocal, alpha);
     float paramG = ndf->getG(woLocal, wiLocal, alpha);
 
@@ -39,9 +48,33 @@ public:
 
   virtual BSDFSampleResult sample(const Vector3f& wo,
                                   const Vector2f& sample) const override {
-    Vector3f wi = squareToCosineHemisphere(sample);
-    float pdf = squareToCosineHemispherePdf(wi);
-    return {f(wo, toWorld(wi)) / pdf, toWorld(wi), pdf, BSDFType::Diffuse};
+    Vector3f woLocal = toLocal(wo);
+    Vector3f whLocal = ndf->sampleWh(woLocal, alpha, sample);
+    Vector3f wiLocal = normalize(-woLocal + 2.f * dot(woLocal, whLocal) * whLocal);
+    float woDotWh = dot(woLocal, whLocal);
+    float paramFr = getFr(eta, woDotWh);
+    float paramD = ndf->getD(whLocal, alpha);
+    bool reflect = std::uniform_real_distribution(0.f, 1.f)(std::default_random_engine()) < paramFr;
+    if (reflect) {
+      float paramG = ndf->getG(woLocal, wiLocal, alpha);
+      return {
+        paramD * paramG * paramFr / (4.f * woLocal[1] * wiLocal[1]),
+        toWorld(wiLocal),
+        ndf->pdf(woLocal, whLocal, alpha) * 0.25f / woDotWh,
+        BSDFType::GlossyReflection
+      };
+    } else {
+      float cosThetaT = fm::sqrt(std::max(1.f - _sq(eta) * (1.f - _sq(woDotWh)), 0.f));
+      Vector3f glossLocal = (eta * woDotWh - (woDotWh > 0.f ? 1.f : -1.f) * cosThetaT) * whLocal - eta * woLocal;
+      float paramG = ndf->getG(woLocal, glossLocal, alpha);
+      return {
+        paramD * paramG * paramFr / (4.f * woLocal[1] * glossLocal[1]),
+        toWorld(glossLocal),
+        ndf->pdf(woLocal, whLocal, alpha) * (1 - paramFr) *
+          std::abs(dot(glossLocal, whLocal) / _sq(dot(woLocal, whLocal) * eta + dot(glossLocal, whLocal))),
+        BSDFType::GlossyTransmission
+      };
+    }
   }
 
   float getR0(float etaO) const noexcept {

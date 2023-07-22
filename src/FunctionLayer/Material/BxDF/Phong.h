@@ -14,14 +14,14 @@ public:
     // TODO
     // 1. 转换坐标系到局部坐标
 
-    Vector3f woLocal = toLocal(wo);
-    Vector3f wiLocal = toLocal(wi);
+    Vector3f woLocal = normalize(toLocal(wo));
+    Vector3f wiLocal = normalize(toLocal(wi));
 
     // 2. 根据公式计算 K_d, K_s
 
     Spectrum diffuse = kd * dot(wiLocal, Vector3f{0.f, 1.f, 0.f});
-    Spectrum specular = ks * pow(dot(woLocal,
-                                     wiLocal * Vector3f{1.f, -1.f, 1.f}), p);
+    Spectrum specular = ks * pow(std::min(0.f, dot(woLocal,
+                                                   wiLocal * Vector3f{1.f, -1.f, 1.f})), p);
 
     // 3. return K_d + K_s
     // tips:
