@@ -3,6 +3,8 @@
 #include <FunctionLayer/Ray/Ray.h>
 
 class Shape;
+class Material;
+class Medium;
 
 //* Ray与Shape交点处的信息
 struct Intersection {
@@ -11,7 +13,8 @@ struct Intersection {
   Vector3f normal;             // 交点处的法线
   Vector3f tangent, bitangent; // 交点处的切线和副切线
   Vector2f texCoord;           // 交点处的纹理坐标
-  const Shape *shape;          // 指向与光线相交的物体
+  const Shape* shape;          // 指向与光线相交的物体
+  std::shared_ptr<Medium> scatteringMedium;
   Vector3f dpdu, dpdv;         // 交点处沿u、v方向的切线
 
   //* 光线微分
@@ -19,8 +22,8 @@ struct Intersection {
   Vector3f dpdx, dpdy;
 };
 
-inline void computeRayDifferentials(Intersection *intersection,
-                                    const Ray &ray) {
+inline void computeRayDifferentials(Intersection* intersection,
+                                    const Ray& ray) {
   // 计算光线微分
   do {
     if (ray.hasDifferentials) {
@@ -63,15 +66,15 @@ inline void computeRayDifferentials(Intersection *intersection,
       float By[2] = {dpdy[dim[0]], dpdy[dim[1]]};
 
       auto solveLinearSystem2x2 = [](const float A[2][2], const float B[2],
-                                     float *x0, float *x1) {
-        float det = A[0][0] * A[1][1] - A[0][1] * A[1][0];
-        if (std::abs(det) < 1e-10f)
-          return false;
-        *x0 = (A[1][1] * B[0] - A[0][1] * B[1]) / det;
-        *x1 = (A[0][0] * B[1] - A[1][0] * B[0]) / det;
-        if (std::isnan(*x0) || std::isnan(*x1))
-          return false;
-        return true;
+                                     float* x0, float* x1) {
+                                       float det = A[0][0] * A[1][1] - A[0][1] * A[1][0];
+                                       if (std::abs(det) < 1e-10f)
+                                         return false;
+                                       *x0 = (A[1][1] * B[0] - A[0][1] * B[1]) / det;
+                                       *x1 = (A[0][0] * B[1] - A[1][0] * B[0]) / det;
+                                       if (std::isnan(*x0) || std::isnan(*x1))
+                                         return false;
+                                       return true;
       };
 
       float dudx, dvdx, dudy, dvdy;

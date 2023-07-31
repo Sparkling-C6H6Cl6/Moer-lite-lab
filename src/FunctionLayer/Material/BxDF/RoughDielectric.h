@@ -46,6 +46,21 @@ public:
     return albedo * paramD * paramG * paramFr / (4.f * cosThetaO);
   }
 
+  virtual float pdf(const Vector3f& wo, const Vector3f& wi) const override {
+    Vector3f woLocal = toLocal(wo);
+    Vector3f wiLocal = toLocal(wi);
+    Vector3f whLocal = normalize(woLocal + wiLocal);
+    float woDotWh = dot(woLocal, whLocal);
+    if (woDotWh < 0.f || wiLocal[1] < 0.f) {
+      float cosThetaT = fm::sqrt(std::max(1.f - _sq(eta) * (1.f - _sq(woDotWh)), 0.f));
+      Vector3f glossLocal = (eta * woDotWh - (woDotWh > 0.f ? 1.f : -1.f) * cosThetaT) * whLocal - eta * woLocal;
+      return ndf->pdf(woLocal, whLocal, alpha) * (1 - getFr(eta, woDotWh)) *
+        std::abs(dot(glossLocal, whLocal) / _sq(dot(woLocal, whLocal) * eta + dot(glossLocal, whLocal)));
+    } else {
+      return ndf->pdf(woLocal, whLocal, alpha) * 0.25f / woDotWh;
+    }
+  }
+
   virtual BSDFSampleResult sample(const Vector3f& wo,
                                   const Vector2f& sample) const override {
     Vector3f woLocal = toLocal(wo);

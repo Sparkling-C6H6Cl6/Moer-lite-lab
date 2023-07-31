@@ -30,7 +30,7 @@ public:
     return diffuse + specular;
   }
 
-  float pdf(const Vector3f& wo, const Vector3f& wi) const {
+  virtual float pdf(const Vector3f& wo, const Vector3f& wi) const override {
     Vector3f woLocal = toLocal(wo), wiLocal = toLocal(wi);
     return squareToCosineHemispherePdf(wiLocal);
   }
@@ -41,7 +41,7 @@ public:
     auto wi = toWorld(wiLocal);
     auto bsdf_f = f(wo, wi);
     auto bsdf_pdf = pdf(wo, wi);
-    return {bsdf_f / bsdf_pdf, wi, bsdf_pdf, BSDFType::Diffuse};
+    return {bsdf_f / bsdf_pdf, wi, bsdf_pdf, BSDFType::Specular};
   }
 
 private:

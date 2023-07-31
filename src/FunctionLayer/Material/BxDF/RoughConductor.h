@@ -48,6 +48,17 @@ public:
     return albedo * paramD * paramG * paramFr / (4.f * cosThetaO);
   }
 
+  virtual float pdf(const Vector3f& wo, const Vector3f& wi) const override {
+    Vector3f woLocal = toLocal(wo);
+    Vector3f wiLocal = toLocal(wi);
+    Vector3f whLocal = normalize(woLocal + wiLocal);
+    float woDotWh = dot(woLocal, whLocal);
+    if (woDotWh < 0.f || wiLocal[1] < 0.f) {
+      return 0.f;
+    }
+    return ndf->pdf(woLocal, whLocal, alpha) * 0.25f / woDotWh;
+  }
+
   virtual BSDFSampleResult sample(const Vector3f& wo,
                                   const Vector2f& sample) const override {
     Vector3f woLocal = toLocal(wo);

@@ -13,15 +13,16 @@ struct BSDFSampleResult {
 
 class BSDF {
 public:
-  BSDF(const Vector3f &_normal, const Vector3f &_tangent,
-       const Vector3f &_bitangent) {
+  BSDF(const Vector3f& _normal, const Vector3f& _tangent,
+       const Vector3f& _bitangent) {
     normal = _normal;
     tangent = _tangent;
     bitangent = _bitangent;
   }
-  virtual Spectrum f(const Vector3f &wo, const Vector3f &wi) const = 0;
-  virtual BSDFSampleResult sample(const Vector3f &wo,
-                                  const Vector2f &sample) const = 0;
+  virtual Spectrum f(const Vector3f& wo, const Vector3f& wi) const = 0;
+  virtual float pdf(const Vector3f& wo, const Vector3f& wi) const = 0;
+  virtual BSDFSampleResult sample(const Vector3f& wo,
+                                  const Vector2f& sample) const = 0;
 
 public:
   Vector3f normal, tangent, bitangent; // 构成局部坐标系

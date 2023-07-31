@@ -53,11 +53,14 @@ public:
 
   }
 
+  virtual float pdf(const Vector3f& wo, const Vector3f& wi) const override {
+    return squareToCosineHemispherePdf(wi);
+  }
+
   virtual BSDFSampleResult sample(const Vector3f& wo,
                                   const Vector2f& sample) const override {
     Vector3f wi = squareToCosineHemisphere(sample);
-    float pdf = squareToCosineHemispherePdf(wi);
-    return {albedo, toWorld(wi), pdf, BSDFType::Diffuse};
+    return {albedo, toWorld(wi), pdf(wo, wi), BSDFType::Diffuse};
   }
 
 private:
