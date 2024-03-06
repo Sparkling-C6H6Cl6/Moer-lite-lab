@@ -1,5 +1,7 @@
 # Moer-lite：面向教学的蒙特卡洛路径追踪渲染框架
 
+forked from https://github.com/NJUCG/Moer-lite
+
 ## 简介
 
 Moer-lite是一个面向教学的蒙特卡洛路径追踪框架。它提供了很多已有的功能，可以避免从零开始构建渲染器时遇到的一些工程性障碍。  
